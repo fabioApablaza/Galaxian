@@ -8,6 +8,7 @@ proyectiles otorgando puntos. Si no son destruidas pueden desaparecer por el otr
 extremo pero si colisionan con la nave producen el fin del juego (partida perdida). La
 partida termina en un corto lapso de tiempo pre-establecido si no es perdida ni cancelada
 antes.
+
 Requerimientos mínimos:
 • Una nave en la parte inferior de la pantalla que se mueve en forma horizontal
 (respondiendo a eventos del teclado) y que dispara proyectiles.
