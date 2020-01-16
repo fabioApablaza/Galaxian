@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Tetris</string>
+    //Activity Principal
+    <string name="fondoInicio">Fondo principal</string>
+    <string name="BotonPrimerNivel">Modo Normal</string>
+    <string name="BotonSegundoNivel">Tetrominos locos</string>
+    <string name="BotonVolumen">Boton audio</string>
+    <string name="BotonHistoria">Boton historia de tetris</string>
+    //Activity Tablero
+    <string name="botonJugar">jugar</string>
+    <string name="botonReiniciar">reset</string>
+    <string name="botonGirar">giro</string>
+    <string name="botonIzquierda">izquierda</string>
+    <string name="botonDerecha">derecha</string>
+    <string name="botonAbajo">abajo</string>
+
+</resources>

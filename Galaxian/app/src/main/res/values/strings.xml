@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Galaxian</string>
+    //Main activity
+    <string name="logoGalaga">Galaga</string>
+    <string name="botomIniciar">Iniciar</string>
+    //Activity Juego
+    <string name="Pausa">Puntuacion</string>
+
+</resources>
