@@ -9,6 +9,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.media.AudioManager;
 import android.media.SoundPool;
+import android.os.CountDownTimer;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -19,6 +20,11 @@ public class TDView extends SurfaceView implements Runnable {
     Context context;
 
     tituloHighScore unTitulo;
+
+    private CountDownTimer unCountDownTimer;
+    private final long MINUTOSDEJUEGO=120000;
+    private long tiempoHastaFinal= MINUTOSDEJUEGO;//2 minutos de juego
+    private String tiempo;
     //Variable para indicar cuando se este jugando o no
     //Dependiendo de su estado se interrumpira su ejecución
     private volatile boolean jugando;
@@ -101,6 +107,7 @@ public class TDView extends SurfaceView implements Runnable {
         explosionInvasor= soundPool.load(getContext(),R.raw.explosionaveenemiga,1);
         caidaInvasor= soundPool.load(getContext(),R.raw.caidainvasor,1);
         this.prepararNivel();
+        actualizarCountDownTimer();
     }
 
     @Override
@@ -140,6 +147,38 @@ public class TDView extends SurfaceView implements Runnable {
         //Inicializa el bitmap de las vidas del jugador
         vidasBitmap= BitmapFactory.decodeResource(context.getResources(),R.drawable.jugador3);
         soundPool.play(inicioNuevoJuego,1,1,0,0,1);
+
+        unCountDownTimer= new CountDownTimer(tiempoHastaFinal,1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tiempoHastaFinal=millisUntilFinished;
+                actualizarCountDownTimer();
+            }
+
+            @Override
+            public void onFinish() {
+                pausado = true;
+                puntaje = 0;
+                vidas = 3;
+                resetearCountDownTimer();
+                prepararNivel();
+            }
+        }.start();
+    }
+    public void actualizarCountDownTimer(){
+        int minutos= (int) tiempoHastaFinal/60000;//Se muestran los minutos
+        int segundos= (int) tiempoHastaFinal % 60000 /1000;//Se muestran los segundos
+
+        tiempo= ""+minutos+":";
+        if(segundos< 10){//Con esto se muestra 1:09 en lugar de 1:9
+            tiempo+="0";
+        }
+        tiempo+=segundos;
+
+    }
+    public void resetearCountDownTimer(){
+        tiempoHastaFinal=MINUTOSDEJUEGO;
+        actualizarCountDownTimer();
     }
 
     private void dibujar() {
@@ -194,6 +233,7 @@ public class TDView extends SurfaceView implements Runnable {
                 canvas.drawText("LISTO", (pantallaX/3)+150,pantallaY-500, paint);
 
             }
+            canvas.drawText(tiempo,10,80,paint);
 
             paint.setColor(Color.argb(255,  249, 129, 0));
 
@@ -294,6 +334,7 @@ public class TDView extends SurfaceView implements Runnable {
                             pausado = true;
                             puntaje = 0;
                             vidas = 3;
+                            resetearCountDownTimer();
                             prepararNivel();
                         }
                     }
@@ -322,6 +363,7 @@ public class TDView extends SurfaceView implements Runnable {
                         pausado = true;
                         vidas = 3;
                         puntaje = 0;
+                        resetearCountDownTimer();
                         prepararNivel();
                     }
                 }
@@ -340,6 +382,7 @@ public class TDView extends SurfaceView implements Runnable {
                         pausado = true;
                         vidas = 3;
                         puntaje = 0;
+                        resetearCountDownTimer();
                         prepararNivel();
                     }
                 }
