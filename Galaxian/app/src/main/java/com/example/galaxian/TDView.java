@@ -29,6 +29,7 @@ public class TDView extends SurfaceView implements Runnable {
     //Dependiendo de su estado se interrumpira su ejecución
     private volatile boolean jugando;
 
+    private boolean resultado;
     private boolean pausado;
     //Hilo del juego
     private Thread gameThread= null;
@@ -67,6 +68,7 @@ public class TDView extends SurfaceView implements Runnable {
 
     // El puntaje
     int puntaje = 0;
+    int puntajeAnterior=0;
 
     // Vidas del jugador
     private int vidas = 3;
@@ -93,6 +95,8 @@ public class TDView extends SurfaceView implements Runnable {
         pantallaX=x;
         pantallaY=y;
 
+        puntajeAnterior=-1;
+
         //Se define el fondo del canvas y se ajusta el tamaño de la pantalla del celular
         fondoJuego= BitmapFactory.decodeResource(context.getResources(),R.drawable.fondojuego);
         fondoJuego= Bitmap.createScaledBitmap(fondoJuego,
@@ -113,6 +117,7 @@ public class TDView extends SurfaceView implements Runnable {
     @Override
     public void run() {
         pausado=true;
+        resultado=true;
         while (jugando){
             long startFrameTime = System.currentTimeMillis();
             if(!pausado){//La ejecucion del juego continuara si el juego no esta pausado
@@ -148,7 +153,7 @@ public class TDView extends SurfaceView implements Runnable {
         vidasBitmap= BitmapFactory.decodeResource(context.getResources(),R.drawable.jugador3);
         soundPool.play(inicioNuevoJuego,1,1,0,0,1);
 
-        unCountDownTimer= new CountDownTimer(tiempoHastaFinal,1000) {
+        /*unCountDownTimer= new CountDownTimer(tiempoHastaFinal,1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 tiempoHastaFinal=millisUntilFinished;
@@ -158,12 +163,13 @@ public class TDView extends SurfaceView implements Runnable {
             @Override
             public void onFinish() {
                 pausado = true;
+                puntajeAnterior=puntaje;
                 puntaje = 0;
                 vidas = 3;
                 resetearCountDownTimer();
                 prepararNivel();
             }
-        }.start();
+        }.start();*/
     }
     public void actualizarCountDownTimer(){
         int minutos= (int) tiempoHastaFinal/60000;//Se muestran los minutos
@@ -231,6 +237,9 @@ public class TDView extends SurfaceView implements Runnable {
             canvas.drawText(Integer.toString(puntaje), (pantallaX/3)+150,250, paint);
             if(pausado){//Si el juego esta pausado se muestra un texto por pantalla
                 canvas.drawText("LISTO", (pantallaX/3)+150,pantallaY-500, paint);
+                if(puntajeAnterior!=-1){
+                    canvas.drawText("Puntaje anterior: "+puntajeAnterior, (pantallaX/3)-100,pantallaY-600, paint);
+                }
 
             }
             canvas.drawText(tiempo,10,80,paint);
@@ -250,45 +259,7 @@ public class TDView extends SurfaceView implements Runnable {
         jugador.actulizar(fps);
 
         // Actualiza a los invasores si son visibles
-            for(int i = 0; i < numInvasores; i++){
-
-                if(invasores[i].getVisibilidad()) {
-                    // Mueve el proximo invasor
-                    invasores[i].actualizar();
-                    if(invasores[i].getModoKamikaze()){//Si el invasor esta haciendo un atque kamikaze tambien actualiza su movimiento
-                        invasores[i].ataqueKamiKaze();
-                    }
-
-                    // Dermina si el invasor quiere dispara o no
-                    if(invasores[i].simulacionDisparo(jugador.getX(),
-                            jugador.getLongitud())){
-
-                        // Define el disparo del invasor
-                        if(disparosInvasores[proximoDisparo].disparo(invasores[i].getX()
-                                        + invasores[i].getLongitud() / 2,
-                                invasores[i].getY(), unDisparo.ABAJO)) {
-
-                            //Dispara y prepara el proximo disparo
-                            proximoDisparo++;
-
-
-                            if (proximoDisparo == maxDisparoAliens) {
-
-                                proximoDisparo = 0;
-                            }
-                        }
-                    }
-
-                    if (invasores[i].getX() > (pantallaX-120)
-                            || invasores[i].getX() < 0 ){
-
-                        choque = true;
-
-                    }
-                }
-
-            }
-
+        actualizarInvasores(choque);
 
 
         // Actualiza todos los disparos de los invasores si estan activos
@@ -298,12 +269,6 @@ public class TDView extends SurfaceView implements Runnable {
             }
         }
 
-        // si un invasor choco con alguno de los bordes de la pantalla, entonces todos los invasores se mueven hacia el lado contrario
-        if(choque){
-            for(int i = 0; i < numInvasores; i++){
-                invasores[i].cambioDeLado();
-            }
-        }
         // Actuliza los disparos del jugador
         if(unDisparo.getEstado()){
             unDisparo.actualizacion(fps);
@@ -320,6 +285,66 @@ public class TDView extends SurfaceView implements Runnable {
             }
         }
         // Verifica si los disparos del jugador colisionan con los invasores
+        verificacionDisparosJugador();
+
+        //Se elige aleatoriamente quien realiza el ataque kamikaze
+        if(aleatorio.nextInt(200)==0){//Algun invasor quiere hacer un ataque Kamikaze? si es cero entonces si
+            idInvasor=aleatorio.nextInt(numInvasores);
+            if(!invasores[idInvasor].getModoKamikaze()&&invasores[idInvasor].getVisibilidad()){
+                invasores[idInvasor].setModoKamikaze();
+                soundPool.play(caidaInvasor,1,1,0,0,1);
+            }
+        }
+
+        // Verifica si las balas de los invasores colisionan con la nave del jugador
+        verificacionDisparosInvasor();
+
+        //Verifica si un invasor colisiona con la nave del jugador
+        verificacionColisionConJugador();
+    }
+    private void verificacionColisionConJugador(){
+        for(int i=0; i<numInvasores;i++){
+            if(invasores[i].getModoKamikaze()&& invasores[i].getVisibilidad()){//Si el invasor esta en modo kamikaze y vivo
+                if(RectF.intersects(jugador.getRect(), invasores[i].getRect())){
+                    invasores[i].setInvisible();//El invasor muere
+                    vidas --;//El jugador pierde una vida
+                    soundPool.play(playerExplodeID, 1, 1, 0, 0, 1);
+
+                    // Se verifica si el jugador no tiene mas vidas
+                    if(vidas == 0){
+                        pausado = true;
+                        vidas = 3;
+                        puntajeAnterior=puntaje;
+                        puntaje = 0;
+                        resetearCountDownTimer();
+                        prepararNivel();
+                    }
+                }
+            }
+        }
+    }
+    private void verificacionDisparosInvasor(){
+        for(int i = 0; i < disparosInvasores.length; i++){
+            if(disparosInvasores[i].getEstado()){
+                if(RectF.intersects(jugador.getRect(), disparosInvasores[i].getRect())){
+                    disparosInvasores[i].reiniciar();
+                    vidas --;
+                    soundPool.play(playerExplodeID, 1, 1, 0, 0, 1);
+
+                    // Se verifica si el jugador no tiene mas vidas
+                    if(vidas == 0){
+                        pausado = true;
+                        vidas = 3;
+                        puntajeAnterior=puntaje;
+                        puntaje = 0;
+                        resetearCountDownTimer();
+                        prepararNivel();
+                    }
+                }
+            }
+        }
+    }
+    private void verificacionDisparosJugador(){
         if(unDisparo.getEstado()) {
             for (int i = 0; i < numInvasores; i++) {
                 if (invasores[i].getVisibilidad()) {
@@ -332,6 +357,7 @@ public class TDView extends SurfaceView implements Runnable {
                         // Si el jugador gano
                         if(puntaje == numInvasores * 10){
                             pausado = true;
+                            puntajeAnterior= puntaje;
                             puntaje = 0;
                             vidas = 3;
                             resetearCountDownTimer();
@@ -341,51 +367,50 @@ public class TDView extends SurfaceView implements Runnable {
                 }
             }
         }
-        //Se elige aleatoriamente quien realiza el ataque kamikaze
-        if(aleatorio.nextInt(200)==0){//Algun invasor quiere hacer un ataque Kamikaze? si es cero entonces si
-            idInvasor=aleatorio.nextInt(numInvasores);
-            if(!invasores[idInvasor].getModoKamikaze()&&invasores[idInvasor].getVisibilidad()){
-                invasores[idInvasor].setModoKamikaze();
-                soundPool.play(caidaInvasor,1,1,0,0,1);
-            }
-        }
+    }
+    private void actualizarInvasores(boolean choque){
+        for(int i = 0; i < numInvasores; i++){
 
-        // Verifica si las balas de los invasores colisionan con la nave del jugador
-        for(int i = 0; i < disparosInvasores.length; i++){
-            if(disparosInvasores[i].getEstado()){
-                if(RectF.intersects(jugador.getRect(), disparosInvasores[i].getRect())){
-                    disparosInvasores[i].reiniciar();
-                    vidas --;
-                    soundPool.play(playerExplodeID, 1, 1, 0, 0, 1);
+            if(invasores[i].getVisibilidad()) {
+                // Mueve el proximo invasor
+                invasores[i].actualizar();
+                if(invasores[i].getModoKamikaze()){//Si el invasor esta haciendo un atque kamikaze tambien actualiza su movimiento
+                    invasores[i].ataqueKamiKaze();
+                }
 
-                    // Se verifica si el jugador no tiene mas vidas
-                    if(vidas == 0){
-                        pausado = true;
-                        vidas = 3;
-                        puntaje = 0;
-                        resetearCountDownTimer();
-                        prepararNivel();
+                // Dermina si el invasor quiere dispara o no
+                if(invasores[i].simulacionDisparo(jugador.getX(),
+                        jugador.getLongitud())){
+
+                    // Define el disparo del invasor
+                    if(disparosInvasores[proximoDisparo].disparo(invasores[i].getX()
+                                    + invasores[i].getLongitud() / 2,
+                            invasores[i].getY(), unDisparo.ABAJO)) {
+
+                        //Dispara y prepara el proximo disparo
+                        proximoDisparo++;
+
+
+                        if (proximoDisparo == maxDisparoAliens) {
+
+                            proximoDisparo = 0;
+                        }
                     }
                 }
-            }
-        }
-        //Verifica si un invasor colisiona con la nave del jugador
-        for(int i=0; i<numInvasores;i++){
-            if(invasores[i].getModoKamikaze()&& invasores[i].getVisibilidad()){//Si el invasor esta en modo kamikaze y vivo
-                if(RectF.intersects(jugador.getRect(), invasores[i].getRect())){
-                    invasores[i].setInvisible();//El invasor muere
-                    vidas --;//El jugador pierde una vida
-                    soundPool.play(playerExplodeID, 1, 1, 0, 0, 1);
 
-                    // Se verifica si el jugador no tiene mas vidas
-                    if(vidas == 0){
-                        pausado = true;
-                        vidas = 3;
-                        puntaje = 0;
-                        resetearCountDownTimer();
-                        prepararNivel();
-                    }
+                if (invasores[i].getX() > (pantallaX-120)
+                        || invasores[i].getX() < 0 ){
+
+                    choque = true;
+
                 }
+            }
+
+        }
+        // si un invasor choco con alguno de los bordes de la pantalla, entonces todos los invasores se mueven hacia el lado contrario
+        if(choque){
+            for(int i = 0; i < numInvasores; i++){
+                invasores[i].cambioDeLado();
             }
         }
     }
