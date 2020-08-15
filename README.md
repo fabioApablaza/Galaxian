@@ -1,5 +1,5 @@
 # Galaxian
-Trabajo Practico final de la materia Laboratorio de programacion:
+**Trabajo Practico final de la materia Laboratorio de programacion:**
 
 Consiste de una nave que se encuentra en el espacio y que puede moverse a derecha e
 izquierda solamente, y puede disparar proyectiles en una única dirección (hacia arriba).
@@ -10,9 +10,8 @@ partida termina en un corto lapso de tiempo pre-establecido si no es perdida ni 
 antes.
 
 Requerimientos mínimos:
-• Una nave en la parte inferior de la pantalla que se mueve en forma horizontal
-(respondiendo a eventos del teclado) y que dispara proyectiles.
-• Naves que se mueven de arriba abajo y pueden ser destruidas por los proyectiles.
+- Una nave en la parte inferior de la pantalla que se mueve en forma horizontal (respondiendo a eventos del teclado) y que dispara proyectiles.
+- Naves que se mueven de arriba abajo y pueden ser destruidas por los proyectiles.
 Todos las decisiones de diseño e implementación que hagan deberán ser especificadas
 en un archivo de texto.
 Para más detalles, posibilidades e ideas a la hora de realizar la implementación pueden
